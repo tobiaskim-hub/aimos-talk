@@ -1,0 +1,982 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>💬 AI Multi-Agent Chat Room | Tobi + 민수 + GenS + More</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .chat-container {
+            width: 100%;
+            max-width: 1400px;
+            height: 90vh;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Header */
+        .chat-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 3px solid rgba(255,255,255,0.2);
+        }
+
+        .chat-title {
+            font-size: 24px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .participants-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .participants {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            max-width: 600px;
+        }
+
+        .participant {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            background: rgba(255,255,255,0.2);
+            padding: 6px 12px;
+            border-radius: 20px;
+            transition: all 0.3s;
+            font-size: 13px;
+        }
+
+        .participant:hover {
+            background: rgba(255,255,255,0.3);
+            transform: scale(1.05);
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #4ade80;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .add-bot-btn {
+            padding: 6px 15px;
+            background: rgba(255,255,255,0.3);
+            border: 2px solid rgba(255,255,255,0.5);
+            color: white;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+
+        .add-bot-btn:hover {
+            background: rgba(255,255,255,0.4);
+            transform: scale(1.05);
+        }
+
+        /* Messages Area */
+        .messages-area {
+            flex: 1;
+            overflow-y: auto;
+            padding: 30px;
+            background: #f8fafc;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .messages-area::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .messages-area::-webkit-scrollbar-track {
+            background: #e2e8f0;
+            border-radius: 10px;
+        }
+
+        .messages-area::-webkit-scrollbar-thumb {
+            background: #94a3b8;
+            border-radius: 10px;
+        }
+
+        .messages-area::-webkit-scrollbar-thumb:hover {
+            background: #64748b;
+        }
+
+        /* Message Bubble */
+        .message {
+            display: flex;
+            gap: 15px;
+            animation: slideIn 0.3s ease-out;
+            max-width: 85%;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message.left {
+            align-self: flex-start;
+        }
+
+        .message.right {
+            align-self: flex-end;
+            flex-direction: row-reverse;
+        }
+
+        .avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            flex-shrink: 0;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .message-content {
+            flex: 1;
+        }
+
+        .message-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+
+        .sender-name {
+            font-weight: bold;
+            font-size: 14px;
+            color: #1e293b;
+        }
+
+        .sender-role {
+            font-size: 11px;
+            color: #64748b;
+            background: #e2e8f0;
+            padding: 2px 8px;
+            border-radius: 10px;
+        }
+
+        .message-time {
+            font-size: 12px;
+            color: #94a3b8;
+        }
+
+        .message-bubble {
+            padding: 15px 20px;
+            border-radius: 15px;
+            line-height: 1.6;
+            position: relative;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .message-bubble pre {
+            background: rgba(0,0,0,0.05);
+            padding: 10px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 10px 0;
+            font-size: 13px;
+        }
+
+        .message-bubble code {
+            background: rgba(0,0,0,0.1);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+
+        /* System Message */
+        .system-message {
+            text-align: center;
+            padding: 10px 20px;
+            background: #e0e7ff;
+            color: #3730a3;
+            border-radius: 20px;
+            font-size: 13px;
+            margin: 10px auto;
+            max-width: 600px;
+        }
+
+        /* Input Area */
+        .input-area {
+            padding: 20px 30px;
+            background: white;
+            border-top: 2px solid #e2e8f0;
+            display: flex;
+            gap: 15px;
+        }
+
+        .sender-select {
+            padding: 12px 20px;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            font-size: 14px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s;
+            min-width: 180px;
+        }
+
+        .sender-select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .message-input {
+            flex: 1;
+            padding: 12px 20px;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            font-size: 14px;
+            resize: none;
+            font-family: inherit;
+            transition: all 0.3s;
+        }
+
+        .message-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .send-button {
+            padding: 12px 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .send-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(102, 126, 234, 0.6);
+        }
+
+        .send-button:active {
+            transform: translateY(0);
+        }
+
+        /* Quick Actions */
+        .quick-actions {
+            padding: 15px 30px;
+            background: #f1f5f9;
+            border-top: 1px solid #e2e8f0;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .quick-action-btn {
+            padding: 8px 16px;
+            background: white;
+            border: 2px solid #e2e8f0;
+            border-radius: 20px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .quick-action-btn:hover {
+            border-color: #667eea;
+            color: #667eea;
+            transform: translateY(-2px);
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        .modal-header {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            color: #1e293b;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 14px;
+            color: #475569;
+            font-weight: 500;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 10px 15px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .color-picker {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .color-option {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 3px solid transparent;
+            transition: all 0.3s;
+        }
+
+        .color-option:hover {
+            transform: scale(1.1);
+        }
+
+        .color-option.selected {
+            border-color: #1e293b;
+            box-shadow: 0 0 0 2px white, 0 0 0 4px #1e293b;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .modal-btn {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .modal-btn.primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .modal-btn.secondary {
+            background: #e2e8f0;
+            color: #475569;
+        }
+
+        .modal-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .chat-header {
+                flex-direction: column;
+                gap: 15px;
+            }
+
+            .participants-container {
+                flex-direction: column;
+                width: 100%;
+            }
+
+            .participants {
+                justify-content: center;
+            }
+
+            .message {
+                max-width: 95%;
+            }
+
+            .input-area {
+                flex-direction: column;
+            }
+
+            .sender-select {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <!-- Header -->
+        <div class="chat-header">
+            <div class="chat-title">
+                💬 AI Multi-Agent Chat Room
+            </div>
+            <div class="participants-container">
+                <div class="participants" id="participantsList">
+                    <!-- 참가자들이 동적으로 추가됨 -->
+                </div>
+                <button class="add-bot-btn" onclick="openAddBotModal()">
+                    ➕ Bot 추가
+                </button>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="quick-actions">
+            <button class="quick-action-btn" onclick="loadQuestion(1)">📋 질문1: 전체 로드맵</button>
+            <button class="quick-action-btn" onclick="loadQuestion(2)">🔧 질문2: Agent 구조</button>
+            <button class="quick-action-btn" onclick="loadQuestion(3)">📚 질문3: RAG 구현</button>
+            <button class="quick-action-btn" onclick="loadQuestion(4)">🎓 질문4: 전공 트랙</button>
+            <button class="quick-action-btn" onclick="loadQuestion(5)">⚖️ 질문5: 도구 개수</button>
+            <button class="quick-action-btn" onclick="clearChat()">🗑️ 채팅 초기화</button>
+            <button class="quick-action-btn" onclick="exportChat()">💾 대화 내보내기</button>
+        </div>
+
+        <!-- Messages Area -->
+        <div class="messages-area" id="messagesArea">
+            <div class="system-message">
+                💬 AI Multi-Agent Chat Room에 오신 것을 환영합니다! 
+                발신자를 선택하고 메시지를 입력하세요.
+            </div>
+        </div>
+
+        <!-- Input Area -->
+        <div class="input-area">
+            <select class="sender-select" id="senderSelect">
+                <!-- 옵션들이 동적으로 추가됨 -->
+            </select>
+            <textarea 
+                class="message-input" 
+                id="messageInput" 
+                placeholder="메시지를 입력하세요... (Shift+Enter: 줄바꿈, Enter: 전송)"
+                rows="2"
+            ></textarea>
+            <button class="send-button" onclick="sendMessage()">
+                보내기 📤
+            </button>
+        </div>
+    </div>
+
+    <!-- Add Bot Modal -->
+    <div class="modal" id="addBotModal">
+        <div class="modal-content">
+            <div class="modal-header">🤖 새 Bot 추가</div>
+            <div class="form-group">
+                <label class="form-label">Bot 이름</label>
+                <input type="text" class="form-input" id="botName" placeholder="예: GPT-4, Gemini, 영희">
+            </div>
+            <div class="form-group">
+                <label class="form-label">역할/설명</label>
+                <input type="text" class="form-input" id="botRole" placeholder="예: 코드 리뷰어, 데이터 분석가">
+            </div>
+            <div class="form-group">
+                <label class="form-label">아이콘 (이모지)</label>
+                <input type="text" class="form-input" id="botIcon" placeholder="예: 🤖, 👨, 👩, 🦾" maxlength="2">
+            </div>
+            <div class="form-group">
+                <label class="form-label">색상 선택</label>
+                <div class="color-picker">
+                    <div class="color-option" style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);" data-color="blue"></div>
+                    <div class="color-option" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);" data-color="orange"></div>
+                    <div class="color-option" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);" data-color="green"></div>
+                    <div class="color-option" style="background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);" data-color="purple"></div>
+                    <div class="color-option" style="background: linear-gradient(135deg, #ec4899 0%, #db2777 100%);" data-color="pink"></div>
+                    <div class="color-option" style="background: linear-gradient(135deg, #14b8a6 0%, #0d9488 100%);" data-color="teal"></div>
+                    <div class="color-option" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);" data-color="red"></div>
+                    <div class="color-option" style="background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);" data-color="indigo"></div>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">메시지 위치</label>
+                <select class="form-input" id="botPosition">
+                    <option value="left">왼쪽 (다른 Bot들과 함께)</option>
+                    <option value="right">오른쪽 (Tobi처럼)</option>
+                </select>
+            </div>
+            <div class="modal-buttons">
+                <button class="modal-btn secondary" onclick="closeAddBotModal()">취소</button>
+                <button class="modal-btn primary" onclick="addNewBot()">추가</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Bot 설정 (확장 가능한 구조)
+        let bots = [
+            {
+                id: 'tobi',
+                name: 'Tobi',
+                role: '사용자',
+                icon: '👨‍💼',
+                color: 'blue',
+                position: 'right',
+                gradient: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+                bubbleStyle: 'background: white; border: 2px solid #e0e7ff; color: #1e293b;'
+            },
+            {
+                id: 'minsu',
+                name: '민수',
+                role: '로컬 LLM (Qwen 7B)',
+                icon: '👨',
+                color: 'orange',
+                position: 'left',
+                gradient: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+                bubbleStyle: 'background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); color: #78350f;'
+            },
+            {
+                id: 'gens',
+                name: 'GenS',
+                role: 'Claude (Cloud AI)',
+                icon: '🤖',
+                color: 'green',
+                position: 'left',
+                gradient: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                bubbleStyle: 'background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%); color: #064e3b;'
+            }
+        ];
+
+        let selectedColor = 'blue';
+        let messageHistory = [];
+
+        // 초기화
+        window.onload = function() {
+            initializeUI();
+            addSystemMessage('채팅방이 준비되었습니다! 질문을 시작하세요. 👋');
+        };
+
+        function initializeUI() {
+            updateParticipantsList();
+            updateSenderSelect();
+            initializeColorPicker();
+        }
+
+        // 참가자 목록 업데이트
+        function updateParticipantsList() {
+            const list = document.getElementById('participantsList');
+            list.innerHTML = bots.map(bot => `
+                <div class="participant">
+                    <span class="status-dot"></span>
+                    <span>${bot.icon} ${bot.name}</span>
+                </div>
+            `).join('');
+        }
+
+        // 발신자 선택 드롭다운 업데이트
+        function updateSenderSelect() {
+            const select = document.getElementById('senderSelect');
+            select.innerHTML = bots.map(bot => `
+                <option value="${bot.id}">${bot.icon} ${bot.name} (${bot.role})</option>
+            `).join('');
+        }
+
+        // 색상 선택기 초기화
+        function initializeColorPicker() {
+            document.querySelectorAll('.color-option').forEach(option => {
+                option.addEventListener('click', function() {
+                    document.querySelectorAll('.color-option').forEach(o => o.classList.remove('selected'));
+                    this.classList.add('selected');
+                    selectedColor = this.dataset.color;
+                });
+            });
+            document.querySelector('.color-option').classList.add('selected');
+        }
+
+        // Bot 추가 모달 열기
+        function openAddBotModal() {
+            document.getElementById('addBotModal').classList.add('active');
+            document.getElementById('botName').value = '';
+            document.getElementById('botRole').value = '';
+            document.getElementById('botIcon').value = '';
+        }
+
+        // Bot 추가 모달 닫기
+        function closeAddBotModal() {
+            document.getElementById('addBotModal').classList.remove('active');
+        }
+
+        // 새 Bot 추가
+        function addNewBot() {
+            const name = document.getElementById('botName').value.trim();
+            const role = document.getElementById('botRole').value.trim();
+            const icon = document.getElementById('botIcon').value.trim() || '🤖';
+            const position = document.getElementById('botPosition').value;
+
+            if (!name) {
+                alert('Bot 이름을 입력하세요!');
+                return;
+            }
+
+            const colorGradients = {
+                blue: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+                orange: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+                green: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                purple: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
+                pink: 'linear-gradient(135deg, #ec4899 0%, #db2777 100%)',
+                teal: 'linear-gradient(135deg, #14b8a6 0%, #0d9488 100%)',
+                red: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+                indigo: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)'
+            };
+
+            const bubbleStyles = {
+                blue: 'background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%); color: #1e3a8a;',
+                orange: 'background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); color: #78350f;',
+                green: 'background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%); color: #064e3b;',
+                purple: 'background: linear-gradient(135deg, #ede9fe 0%, #ddd6fe 100%); color: #4c1d95;',
+                pink: 'background: linear-gradient(135deg, #fce7f3 0%, #fbcfe8 100%); color: #831843;',
+                teal: 'background: linear-gradient(135deg, #ccfbf1 0%, #99f6e4 100%); color: #134e4a;',
+                red: 'background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%); color: #7f1d1d;',
+                indigo: 'background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%); color: #312e81;'
+            };
+
+            const newBot = {
+                id: name.toLowerCase().replace(/\s+/g, '-'),
+                name: name,
+                role: role || 'AI Assistant',
+                icon: icon,
+                color: selectedColor,
+                position: position,
+                gradient: colorGradients[selectedColor],
+                bubbleStyle: bubbleStyles[selectedColor]
+            };
+
+            bots.push(newBot);
+            initializeUI();
+            closeAddBotModal();
+            addSystemMessage(`🎉 ${icon} ${name}님이 입장하셨습니다!`);
+        }
+
+        // 메시지 전송
+        function sendMessage() {
+            const senderId = document.getElementById('senderSelect').value;
+            const input = document.getElementById('messageInput');
+            const message = input.value.trim();
+
+            if (!message) return;
+
+            const bot = bots.find(b => b.id === senderId);
+            addMessage(bot, message);
+            input.value = '';
+            input.focus();
+            scrollToBottom();
+        }
+
+        // Enter 키로 전송
+        document.addEventListener('DOMContentLoaded', function() {
+            const input = document.getElementById('messageInput');
+            if (input) {
+                input.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        sendMessage();
+                    }
+                });
+            }
+        });
+
+        // 메시지 추가
+        function addMessage(bot, text) {
+            const messagesArea = document.getElementById('messagesArea');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${bot.position}`;
+
+            const currentTime = new Date().toLocaleTimeString('ko-KR', { 
+                hour: '2-digit', 
+                minute: '2-digit' 
+            });
+
+            messageDiv.innerHTML = `
+                <div class="avatar" style="background: ${bot.gradient};">${bot.icon}</div>
+                <div class="message-content">
+                    <div class="message-header">
+                        <span class="sender-name">${bot.name}</span>
+                        <span class="sender-role">${bot.role}</span>
+                        <span class="message-time">${currentTime}</span>
+                    </div>
+                    <div class="message-bubble" style="${bot.bubbleStyle}">${formatMessage(text)}</div>
+                </div>
+            `;
+
+            messagesArea.appendChild(messageDiv);
+
+            messageHistory.push({
+                bot: bot,
+                text: text,
+                time: currentTime
+            });
+
+            scrollToBottom();
+        }
+
+        // 시스템 메시지 추가
+        function addSystemMessage(text) {
+            const messagesArea = document.getElementById('messagesArea');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'system-message';
+            messageDiv.textContent = text;
+            messagesArea.appendChild(messageDiv);
+            scrollToBottom();
+        }
+
+        // 메시지 포맷팅
+        function formatMessage(text) {
+            text = text.replace(/```(\w+)?\n([\s\S]*?)```/g, '<pre><code>$2</code></pre>');
+            text = text.replace(/`([^`]+)`/g, '<code>$1</code>');
+            text = text.replace(/\n/g, '<br>');
+            return text;
+        }
+
+        // 자동 스크롤
+        function scrollToBottom() {
+            const messagesArea = document.getElementById('messagesArea');
+            messagesArea.scrollTop = messagesArea.scrollHeight;
+        }
+
+        // 채팅 초기화
+        function clearChat() {
+            if (confirm('채팅 내용을 모두 삭제하시겠습니까?')) {
+                const messagesArea = document.getElementById('messagesArea');
+                messagesArea.innerHTML = `
+                    <div class="system-message">
+                        💬 채팅이 초기화되었습니다. 새로운 대화를 시작하세요!
+                    </div>
+                `;
+                messageHistory = [];
+            }
+        }
+
+        // 대화 내보내기
+        function exportChat() {
+            const markdown = messageHistory.map(msg => {
+                return `### ${msg.bot.icon} ${msg.bot.name} (${msg.time})\n\n${msg.text}\n\n---\n`;
+            }).join('\n');
+
+            const blob = new Blob([markdown], { type: 'text/markdown' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `chat-history-${new Date().toISOString().split('T')[0]}.md`;
+            a.click();
+            URL.revokeObjectURL(url);
+            addSystemMessage('💾 대화가 Markdown 파일로 내보내기되었습니다!');
+        }
+
+        // 미리 준비된 질문 로드
+        function loadQuestion(questionNum) {
+            const questions = {
+                1: `나는 Ollama AI Agent를 개발 중이야. 
+현재 Qwen 2.5:7B 모델을 사용하고 있고, 8개의 기본 도구(파일 읽기/쓰기, Git 기본)가 구현되어 있어.
+
+목표는 GenS/Claude Code Agent 수준의 개발자 Assistant를 만드는 거야.
+
+다음 로드맵을 10주에 걸쳐 진행하려고 하는데, 실현 가능한지 평가해줘:
+
+**Phase 1 (2주)**: 파일 도구 확장 (+10개)
+- edit_file, multi_edit, glob_search, grep_search, ls_detail
+- copy_file, move_file, delete_file, file_info, create_symlink
+
+**Phase 2 (2주)**: 웹 연동 (+8개)
+- web_search, web_fetch, http_request, web_crawler
+- download_file, image_understand, screenshot, rss_feed
+
+**Phase 3 (3주)**: 지능 강화 (+12개)
+- rag_index, rag_search (ChromaDB)
+- todo_write, project_backup
+- git_push, npm_install, pm2_start, docker_run
+
+**Phase 4 (3주)**: GenS 수준 완성 (+15개)
+- 고급 Git, Cloudflare 배포, 코드 품질, 문서 생성, 디버깅
+
+**질문**:
+1. 이 로드맵이 10주 안에 실현 가능한가?
+2. 각 Phase별로 어떤 어려움이 예상되나?
+3. 우선순위를 조정해야 한다면 어떤 걸 먼저 해야 하나?
+4. Qwen 2.5:7B 모델의 한계로 인해 불가능한 부분이 있나?`,
+
+                2: `현재 Agent.ts의 구조는 다음과 같아:
+
+1. 사용자 요청 수신
+2. LLM(Qwen)에게 "어떤 도구를 써야 하는가?" 프롬프트 전달
+3. JSON 응답 파싱 { tool: "read_file", params: ["README.md"] }
+4. 해당 도구 실행
+5. 결과를 다시 LLM에게 보내서 요약 생성
+6. 사용자에게 응답
+
+**문제점**:
+- JSON 파싱이 자주 실패함 (Qwen이 일반 텍스트로 답변)
+- 복잡한 작업(5단계 이상)을 계획하지 못함
+- 에러가 나면 자동 복구를 못함
+
+**질문**:
+1. 이 구조가 합리적인가?
+2. JSON 파싱 실패를 어떻게 줄일 수 있나?
+3. Multi-step 작업을 어떻게 처리해야 하나?
+4. LangChain의 ReAct 패턴을 적용하면 개선될까?`,
+
+                3: `Phase 3에서 RAG(문서 기반 답변)를 추가하려고 해.
+
+**계획**:
+1. ChromaDB 설치
+2. 문서를 500자 청크로 분할
+3. Ollama의 nomic-embed-text 모델로 임베딩 생성
+4. ChromaDB에 저장
+5. 질문이 들어오면 관련 문서 검색 (top-3)
+6. 검색된 문서를 컨텍스트로 Qwen에게 답변 요청
+
+**예상 사용 사례**:
+- AUTOSAR 가이드 (500페이지 PDF)
+- 사내 개발 문서
+- API 레퍼런스
+
+**질문**:
+1. 이 접근 방식이 합리적인가?
+2. 500자 청크 크기가 적절한가?
+3. nomic-embed-text vs 다른 임베딩 모델?
+4. ChromaDB vs FAISS vs Pinecone?
+5. Qwen 7B 모델의 컨텍스트 길이 한계는?
+6. 성능 문제(속도/메모리)가 예상되나?`,
+
+                4: `Agent를 "전공"별로 특화시키려고 해. 대학교 커리큘럼처럼.
+
+**Core Curriculum (공통 - 26개 도구)**
+- 모든 Agent가 필수로 배워야 함
+- 파일, Git, 웹, RAG 등
+
+**Specialization Tracks (전공)**:
+
+**Track 1: 자동차 SDV Agent**
+- AUTOSAR ARXML 파싱
+- CAN 메시지 생성
+- ECU 코드 자동 생성
+
+**Track 2: 웹 개발 Agent**
+- React 컴포넌트 생성
+- Hono API 엔드포인트
+- Cloudflare 배포
+
+**Track 3: AI 연구 Agent**
+- Axolotl 파인튜닝
+- DeepSpeed 분산 훈련
+- lm-eval 벤치마크
+
+**Track 4: 문서 작성 Agent**
+- README 자동 생성
+- Mermaid 다이어그램
+- API 문서화
+
+**질문**:
+1. 하나의 Agent 코드베이스에서 여러 "전공"을 선택적으로 로드하는 게 가능한가?
+2. 전공별로 별도 Agent를 만들어야 하나?
+3. 설정 파일(specialization.json)로 도구를 동적 로드하는 게 현실적인가?
+4. 전공마다 다른 프롬프트 스타일이 필요한가?`,
+
+                5: `현재: 8개 도구
+목표: 45+개 도구
+
+**우려사항**:
+1. 도구가 45개가 되면 프롬프트가 너무 길어지지 않나?
+   (모든 도구 설명을 프롬프트에 포함해야 함)
+
+2. Qwen이 45개 중에서 올바른 도구를 선택할 수 있나?
+
+3. 컨텍스트 길이 제한은?
+   - Qwen 2.5:7B의 최대 컨텍스트: 32k 토큰
+   - 도구 45개 설명: ~5000 토큰 (예상)
+   - 대화 히스토리: ~10000 토큰
+   - 남은 여유: ~17000 토큰
+
+**질문**:
+1. 45개 도구가 현실적인 목표인가?
+2. 도구를 카테고리별로 묶어서 2단계로 선택하는 게 나을까?
+   예: "파일 작업" → "edit_file"
+3. 자주 쓰는 도구만 프롬프트에 포함하고, 나머지는 필요 시 로드?
+4. 도구 임베딩을 만들어서 시맨틱 검색으로 선택?`
+            };
+
+            const question = questions[questionNum];
+            document.getElementById('messageInput').value = question;
+            document.getElementById('senderSelect').value = 'tobi';
+            addSystemMessage(`💡 질문 ${questionNum}이 로드되었습니다. "보내기" 버튼을 클릭하세요!`);
+        }
+    </script>
+</body>
+</html>

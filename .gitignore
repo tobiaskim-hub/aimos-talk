@@ -1,0 +1,58 @@
+# Git credentials (NEVER commit these)
+.git-credentials
+.gitconfig
+
+# GitHub CLI configuration (contains tokens)
+.config/gh/
+
+# Wrangler logs and cache
+.config/.wrangler/
+
+# PM2 runtime files
+.pm2/
+
+# Node modules
+node_modules/
+**/node_modules/
+
+# Environment variables
+.env
+.dev.vars
+**/.env
+**/.dev.vars
+
+# Build outputs
+dist/
+**/dist/
+
+# Logs
+*.log
+logs/
+*.log.*
+
+# PID files
+*.pid
+pids/
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Backup files
+*.backup
+*.bak
+*.tar.gz
+*.zip
